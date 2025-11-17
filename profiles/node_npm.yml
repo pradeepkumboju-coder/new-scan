@@ -1,0 +1,18 @@
+profile: "node_npm"
+
+dependency_tools:
+  - "npm-audit"
+
+sast_tools:
+  - "sonar"
+
+universal_scans:
+  - "detect-secrets"
+  - "trivy-fs"
+
+container_scans:
+  - "trivy-image"
+
+report:
+  format: "html"
+  include_raw: true

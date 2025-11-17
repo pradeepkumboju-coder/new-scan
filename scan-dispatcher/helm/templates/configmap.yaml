@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "central-scan-listener.fullname" . }}
+data:
+  application.yaml: |
+    server:
+      port: {{ .Values.service.port }}
+
+    kafka:
+      bootstrapServers: {{ .Values.kafka.bootstrapServers }}
+      topic: {{ .Values.kafka.topic }}
+
+    github:
+      webhookSecretEnv: GITHUB_WEBHOOK_SECRET
+      appIdEnv: GITHUB_APP_ID
+      privateKeyEnv: GITHUB_APP_PRIVATE_KEY

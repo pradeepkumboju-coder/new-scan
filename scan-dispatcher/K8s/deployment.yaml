@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scan-dispatcher
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: scan-dispatcher
+  template:
+    metadata:
+      labels:
+        app: scan-dispatcher
+    spec:
+      containers:
+      - name: dispatcher
+        image: ghcr.io/<YOUR_ORG>/scan-dispatcher:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: scan-dispatcher-secrets
+              key: webhook_secret
+        - name: GITHUB_APP_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: scan-dispatcher-secrets
+              key: private_key
+        - name: GITHUB_APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: scan-dispatcher-secrets
+              key: app_id
+        - name: GITHUB_ORG
+          value: "<YOUR_ORG>"
+        - name: ORCHESTRATOR_REPO
+          value: "scan-orchestrator"
+        - name: ORCHESTRATOR_WORKFLOW
+          value: "dispatcher.yml"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scan-dispatcher
+spec:
+  selector:
+    app: scan-dispatcher
+  ports:
+    - port: 80
+      targetPort: 3000

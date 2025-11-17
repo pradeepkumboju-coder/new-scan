@@ -1,0 +1,19 @@
+profile: "html_css"
+
+dependency_tools: []
+
+sast_tools:
+  - "stylelint"
+  - "htmlhint"
+  - "sonar"
+
+universal_scans:
+  - "detect-secrets"
+  - "trivy-fs"
+
+container_scans:
+  - "trivy-image"
+
+report:
+  format: "html"
+  include_raw: true

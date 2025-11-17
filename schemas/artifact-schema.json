@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unified Security Finding",
+  "type": "object",
+  "properties": {
+    "scanner": { "type": "string" },
+    "scanner_version": { "type": "string" },
+    "repository": { "type": "string" },
+    "commit": { "type": "string" },
+    "branch": { "type": "string" },
+    "language": { "type": "string" },
+    "profile": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_id": { "type": "string" },
+          "message": { "type": "string" },
+          "severity": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "number" },
+          "category": { "type": "string" },
+          "cwe": { "type": "string" },
+          "raw_payload": {}
+        }
+      }
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  },
+  "required": ["scanner", "repository", "commit", "findings"]
+}

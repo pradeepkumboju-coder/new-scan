@@ -1,0 +1,28 @@
+name: "Bandit Scan"
+description: "Run Bandit (Python SAST) and normalize results into unified report format"
+
+inputs: {}
+
+outputs: {}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install bandit
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip || true
+        python -m pip install bandit
+
+    - name: Run bandit
+      shell: bash
+      run: |
+        mkdir -p raw normalized
+        bandit -r . -f json -o raw/bandit.json || true
+
+        python3 tools/normalize_report.py \
+          --input raw/bandit.json \
+          --output normalized/bandit-normalized.json \
+          --scanner bandit
+
+

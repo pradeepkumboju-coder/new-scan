@@ -1,0 +1,21 @@
+profile: "java_maven"
+
+dependency_tools:
+  - "owasp-depcheck"
+  - "trivy-fs"
+
+sast_tools:
+  - "sonar"
+  - "findsecbugs"
+
+universal_scans:
+  - "detect-secrets"
+  - "trivy-fs"
+
+container_scans:
+  - "trivy-image"
+  - "trivy-config"
+
+report:
+  format: "html"
+  include_raw: true

@@ -1,0 +1,59 @@
+name: "Trivy Security Scan"
+description: "Runs Trivy FS or Image scan and normalizes output"
+
+inputs:
+  mode:
+    description: "Scan mode: fs | image"
+    required: true
+  image:
+    description: "Image name (if mode=image)"
+    required: false
+
+outputs:
+  report_path:
+    description: "Normalized Trivy report path"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Trivy
+      shell: bash
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y wget
+        wget -qO- https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo deb https://aquasecurity.github.io/trivy-repo/deb stable main | sudo tee /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update -y
+        sudo apt-get install -y trivy
+
+    - name: Prepare directories
+      shell: bash
+      run: mkdir -p raw normalized
+
+    - name: Run Trivy FS Scan
+      if: ${{ inputs.mode == 'fs' }}
+      shell: bash
+      run: |
+        echo "Running Trivy filesystem scan..."
+        trivy fs --format json --output raw/trivy-fs.json .
+
+    - name: Run Trivy Image Scan
+      if: ${{ inputs.mode == 'image' }}
+      shell: bash
+      run: |
+        echo "Running Trivy image scan..."
+        trivy image --format json --output raw/trivy-image.json "${{ inputs.image }}"
+
+    - name: Normalize Trivy Output
+      shell: bash
+      run: |
+        RAW_FILE="raw/trivy-${{ inputs.mode }}.json"
+        OUT_FILE="normalized/trivy-${{ inputs.mode }}-normalized.json"
+
+        python3 tools/normalize_report.py \
+          --input "${RAW_FILE}" \
+          --output "${OUT_FILE}" \
+          --scanner "trivy-${{ inputs.mode }}"
+
+        echo "report_path=${OUT_FILE}" >> $GITHUB_OUTPUT
+

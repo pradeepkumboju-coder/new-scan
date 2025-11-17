@@ -1,0 +1,80 @@
+name: "Route By Profile"
+description: "Reads a scan profile YAML and outputs selected scanners."
+
+inputs:
+  profile:
+    description: "Profile name (e.g., node_pnpm)"
+    required: true
+
+outputs:
+  dependency_scans:
+    description: "Dependency scanners"
+  sast_scans:
+    description: "SAST scanners"
+  universal_scans:
+    description: "Universal scanners"
+  container_scans:
+    description: "Container scanners"
+  scans:
+    description: "Combined scanners list"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Prepare profile path
+      id: prep
+      shell: bash
+      run: |
+        PROFILE="${{ inputs.profile }}"
+        FILE="${GITHUB_ACTION_PATH}/../../profiles/${PROFILE}.yml"
+
+        if [[ ! -f "$FILE" ]]; then
+          echo "Profile not found, falling back to generic"
+          FILE="${GITHUB_ACTION_PATH}/../../profiles/generic.yml"
+        fi
+
+        echo "profile_file=$FILE" >> $GITHUB_OUTPUT
+
+    - name: Parse profile YAML into JSON
+      id: parse
+      shell: bash
+      run: |
+        python3 << 'EOF' > parsed.json
+import yaml, json, os
+
+file = os.environ["PROFILE_FILE"]
+
+with open(file, "r") as f:
+    y = yaml.safe_load(f) or {}
+
+result = {
+    "dependency": y.get("dependency_tools", []),
+    "sast": y.get("sast_tools", []),
+    "universal": y.get("universal_scans", []),
+    "container": y.get("container_scans", []),
+}
+
+with open("parsed.json", "w") as out:
+    json.dump(result, out)
+EOF
+      env:
+        PROFILE_FILE: ${{ steps.prep.outputs.profile_file }}
+
+    - name: Extract values from parsed.json
+      id: extract
+      shell: bash
+      run: |
+        dep=$(python3 -c "import json; d=json.load(open('parsed.json')); print(','.join(d['dependency']))")
+        sast=$(python3 -c "import json; d=json.load(open('parsed.json')); print(','.join(d['sast']))")
+        unv=$(python3 -c "import json; d=json.load(open('parsed.json')); print(','.join(d['universal']))")
+        cnt=$(python3 -c "import json; d=json.load(open('parsed.json')); print(','.join(d['container']))")
+
+        all_scans=$(python3 -c "import json; d=json.load(open('parsed.json')); 
+sc=set(d['dependency'] + d['sast'] + d['universal'] + d['container']); 
+print(','.join(sorted(sc)))")
+
+        echo "dependency_scans=$dep" >> $GITHUB_OUTPUT
+        echo "sast_scans=$sast" >> $GITHUB_OUTPUT
+        echo "universal_scans=$unv" >> $GITHUB_OUTPUT
+        echo "container_scans=$cnt" >> $GITHUB_OUTPUT
+        echo "scans=$all_scans" >> $GITHUB_OUTPUT

@@ -1,0 +1,57 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "central-scan-listener.fullname" . }}
+  labels:
+    {{- include "central-scan-listener.labels" . | nindent 4 }}
+
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    
+    {{- if .Values.ingress.sslRedirect }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- end }}
+
+    {{- if .Values.ingress.useGcpNeg }}
+    cloud.google.com/neg: '{"ingress": true}'
+    {{- end }}
+
+    {{- if .Values.ingress.enableCors }}
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "{{ .Values.ingress.cors.allowOrigin }}"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "{{ .Values.ingress.cors.allowMethods }}"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "{{ .Values.ingress.cors.allowHeaders }}"
+    {{- end }}
+
+    {{- if .Values.ingress.annotations }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- end }}
+
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        {{- range .Values.ingress.hosts }}
+        - {{ .host }}
+        {{- end }}
+      secretName: {{ .Values.ingress.tlsSecret }}
+  {{- end }}
+
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          - path: {{ .path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "central-scan-listener.fullname" $ }}
+                port:
+                  number: {{ $.Values.service.port }}
+    {{- end }}
+
+{{- end }}

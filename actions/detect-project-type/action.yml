@@ -1,0 +1,44 @@
+name: "Detect Project Type"
+description: "Detect project language, build tool, scan profile and metadata"
+
+inputs:
+  repo-path:
+    description: "Path to repository root"
+    default: "."
+    required: false
+
+outputs:
+  primary_language:
+    description: "Detected primary language"
+  build_tool:
+    description: "Detected build tool"
+  scan_profile:
+    description: "Scan profile to run"
+  has_dockerfile:
+    description: "Does repo contain a Dockerfile?"
+  is_monorepo:
+    description: "Is repository a monorepo?"
+  is_root_workspace:
+    description: "Is current directory the workspace root?"
+
+runs:
+  using: "composite"
+  steps:
+    - id: run_detect
+      name: Run detection script
+      shell: bash
+      working-directory: ${{ inputs.repo-path }}
+      run: |
+        chmod +x $GITHUB_ACTION_PATH/detect.sh
+        $GITHUB_ACTION_PATH/detect.sh
+
+    - name: Set outputs
+      id: set_outputs
+      shell: bash
+      run: |
+        echo "primary_language=$(cat .detect/primary_language 2>/dev/null || echo unknown)" >> $GITHUB_OUTPUT
+        echo "build_tool=$(cat .detect/build_tool 2>/dev/null || echo none)" >> $GITHUB_OUTPUT
+        echo "scan_profile=$(cat .detect/scan_profile 2>/dev/null || echo generic)" >> $GITHUB_OUTPUT
+        echo "has_dockerfile=$(cat .detect/has_dockerfile 2>/dev/null || echo false)" >> $GITHUB_OUTPUT
+        echo "is_monorepo=$(cat .detect/is_monorepo 2>/dev/null || echo false)" >> $GITHUB_OUTPUT
+        echo "is_root_workspace=$(cat .detect/is_root_workspace 2>/dev/null || echo true)" >> $GITHUB_OUTPUT

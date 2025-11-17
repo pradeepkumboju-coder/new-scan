@@ -1,0 +1,68 @@
+replicaCount: 2
+
+image:
+  repository: registry.example.com/central-scan-listener
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8080
+
+imagePullSecrets: []
+podAnnotations: {}
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+githubApp:
+  appId: ""
+  privateKey: ""
+  webhookSecret: ""
+
+kafka:
+  bootstrapServers: "kafka:9092"
+  topic: "github-push-events"
+
+metrics:
+  enabled: true
+
+extraEnv: []
+
+
+ingress:
+  enabled: true
+
+  className: "nginx"
+
+  hosts:
+    - host: scan-listener.example.com
+      path: "/"
+
+  tls: true
+  tlsSecret: "scan-listener-tls"
+
+  sslRedirect: true
+
+  # Optional: GCP NEG for external LB
+  useGcpNeg: false
+
+  # Optional: CORS
+  enableCors: false
+  cors:
+    allowOrigin: "*"
+    allowMethods: "GET, POST, OPTIONS"
+    allowHeaders: "Accept, Authorization, Content-Type"
+
+  # Extra annotations
+  annotations: {}
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # nginx.ingress.kubernetes.io/proxy-body-size: "10m"

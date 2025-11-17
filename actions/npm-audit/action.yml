@@ -1,0 +1,31 @@
+name: "NPM Audit"
+description: "Run npm audit and normalize results into unified report format"
+
+inputs: {}
+
+outputs: {}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ensure dependencies (best-effort)
+      shell: bash
+      run: |
+        if [[ -f package-lock.json ]]; then
+          npm ci --ignore-scripts || npm install --ignore-scripts || true
+        else
+          npm install --package-lock-only --ignore-scripts || true
+        fi
+
+    - name: Run npm audit
+      shell: bash
+      run: |
+        mkdir -p raw normalized
+        # npm audit exits non-zero when vulnerabilities are found; we don't want to fail the job here
+        npm audit --json > raw/npm-audit.json || true
+
+        python3 tools/normalize_report.py \
+          --input raw/npm-audit.json \
+          --output normalized/npm-audit-normalized.json \
+          --scanner npm-audit
+

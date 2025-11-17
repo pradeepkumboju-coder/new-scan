@@ -1,0 +1,29 @@
+name: Security Scan Dispatcher Entry
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: "Full repository name (e.g. org/repo)"
+        required: true
+        type: string
+      branch:
+        description: "Branch to scan"
+        required: true
+        type: string
+      sha:
+        description: "Commit SHA to associate with this scan"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  run-full-scan:
+    uses: ./.github/workflows/full-security-scan.yml
+    with:
+      repo-name: ${{ inputs.repo }}
+      branch: ${{ inputs.branch }}
+      commit: ${{ inputs.sha }}
+      report-bucket: ${{ vars.REPORT_BUCKET }}

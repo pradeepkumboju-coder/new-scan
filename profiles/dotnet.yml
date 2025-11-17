@@ -1,0 +1,18 @@
+profile: "dotnet"
+
+dependency_tools:
+  - "dotnet-vuln"  # dotnet list package --vulnerable
+
+sast_tools:
+  - "sonar"
+
+universal_scans:
+  - "detect-secrets"
+  - "trivy-fs"
+
+container_scans:
+  - "trivy-image"
+
+report:
+  format: "html"
+  include_raw: true

@@ -1,0 +1,115 @@
+name: Full Security Scan (Orchestrator)
+
+on:
+  workflow_call:
+    inputs:
+      repo-name:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      commit:
+        required: true
+        type: string
+      report-bucket:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      primary_language: ${{ steps.set_outputs.outputs.primary_language }}
+      build_tool: ${{ steps.set_outputs.outputs.build_tool }}
+      scan_profile: ${{ steps.set_outputs.outputs.scan_profile }}
+      has_dockerfile: ${{ steps.set_outputs.outputs.has_dockerfile }}
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repo-name }}
+          ref: ${{ inputs.branch }}
+          fetch-depth: 1
+
+      - name: Detect project type (local action)
+        id: set_outputs
+        uses: ./actions/detect-project-type
+        with:
+          repo-path: "."
+
+  run-scans:
+    needs: detect
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repo-name }}
+          ref: ${{ inputs.branch }}
+          fetch-depth: 1
+
+      - name: Route by profile
+        id: route
+        uses: ./actions/route-by-profile
+        with:
+          profile: ${{ needs.detect.outputs.scan_profile }}
+
+      - name: Debug routing (for logs)
+        run: |
+          echo "PROFILE = ${{ needs.detect.outputs.scan_profile }}"
+          echo "SCANS = ${{ steps.route.outputs.scans }}"
+          echo "DEP_SCANS = ${{ steps.route.outputs.dependency_scans }}"
+          echo "SAST_SCANS = ${{ steps.route.outputs.sast_scans }}"
+          echo "UNIV_SCANS = ${{ steps.route.outputs.universal_scans }}"
+
+      # Dependency scanners
+      - name: Run npm-audit
+        if: contains(steps.route.outputs.dependency_scans, 'npm-audit')
+        uses: ./actions/npm-audit
+
+      - name: Run pip-audit
+        if: contains(steps.route.outputs.dependency_scans, 'pip-audit')
+        uses: ./actions/pip-audit
+
+      # SAST scanners
+      - name: Run Bandit
+        if: contains(steps.route.outputs.sast_scans, 'bandit')
+        uses: ./actions/bandit
+
+      - name: Run SonarQube
+        if: contains(steps.route.outputs.sast_scans, 'sonar')
+        uses: ./actions/sonar-scan
+
+      # Universal scans (secrets, filesystem, etc.)
+      - name: Run secrets scan
+        if: contains(steps.route.outputs.universal_scans, 'detect-secrets')
+        uses: ./actions/secrets-scan
+
+      - name: Run Trivy filesystem scan
+        if: contains(steps.route.outputs.universal_scans, 'trivy-fs')
+        uses: ./actions/trivy-scan
+        with:
+          mode: "fs"
+
+      # Container scans
+      - name: Run Trivy image scan
+        if: contains(steps.route.outputs.container_scans, 'trivy-image')
+        uses: ./actions/trivy-scan
+        with:
+          mode: "image"
+          image: "${{ env.CONTAINER_IMAGE || 'placeholder-image:latest' }}"
+
+      # Merge normalized JSON reports (normalized/* -> merged.json)
+      - name: Merge normalized reports
+        run: |
+          python3 tools/merge_reports.py --input-dir normalized --output merged.json
+
+      # Upload merged report
+      - name: Upload merged report
+        run: |
+          chmod +x tools/upload_to_bucket.sh
+          ./tools/upload_to_bucket.sh "${{ inputs.report-bucket }}" "${{ inputs.repo-name }}" "${{ inputs.commit }}" merged.json

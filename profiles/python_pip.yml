@@ -1,0 +1,20 @@
+profile: "python_pip"
+
+dependency_tools:
+  - "pip-audit"
+  - "safety"
+
+sast_tools:
+  - "bandit"
+  - "sonar"
+
+universal_scans:
+  - "detect-secrets"
+  - "trivy-fs"
+
+container_scans:
+  - "trivy-image"
+
+report:
+  format: "html"
+  include_raw: true

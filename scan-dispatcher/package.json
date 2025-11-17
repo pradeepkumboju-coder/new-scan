@@ -1,0 +1,23 @@
+{
+  "name": "scan-dispatcher",
+  "version": "1.0.0",
+  "description": "GitHub App dispatcher for centralized security scan orchestrator",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "lint": "npx eslint src --fix",
+    "test": "node src/test-runner.js"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.0",
+    "prom-client": "^14.0.1",
+    "pino": "^8.8.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

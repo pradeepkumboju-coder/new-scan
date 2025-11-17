@@ -1,0 +1,34 @@
+name: "SonarQube Scan"
+description: "Run SonarQube scan using SonarQube Enterprise server"
+
+inputs:
+  project-key:
+    description: "SonarQube project key"
+    required: false
+  project-name:
+    description: "SonarQube project name"
+    required: false
+
+outputs: {}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Prepare sonar-project.properties if missing
+      shell: bash
+      run: |
+        if [[ ! -f "sonar-project.properties" ]] && [[ -f "templates/sonar-project.properties" ]]; then
+          cp templates/sonar-project.properties sonar-project.properties
+        fi
+
+    - name: Run SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@v2
+      with:
+        args: >
+          -Dsonar.projectKey=${{ inputs.project-key || env.SONAR_PROJECT_KEY }}
+          -Dsonar.projectName=${{ inputs.project-name || env.SONAR_PROJECT_NAME }}
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
+

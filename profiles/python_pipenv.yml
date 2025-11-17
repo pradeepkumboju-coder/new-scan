@@ -1,0 +1,21 @@
+profile: "python_pipenv"
+
+dependency_tools:
+  - "pipenv-audit"
+  - "pip-audit"
+  - "safety"
+
+sast_tools:
+  - "bandit"
+  - "sonar"
+
+universal_scans:
+  - "detect-secrets"
+  - "trivy-fs"
+
+container_scans:
+  - "trivy-image"
+
+report:
+  format: "html"
+  include_raw: true
